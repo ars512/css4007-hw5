@@ -1,0 +1,47 @@
+{
+  "scenario": "S01",
+  "title": "Simple Wi-Fi route",
+  "part": 1,
+  "status_profile": "normal",
+  "graph_variant": null,
+  "reset_before": true,
+  "events": [
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli part1 --message \"I cannot connect to Wi-Fi.\" --variant original",
+      "user_id": "demo-user-a",
+      "thread_id": "s01",
+      "message": "I cannot connect to Wi-Fi.",
+      "nodes": [
+        "START",
+        "read_request",
+        "wifi_help",
+        "END"
+      ],
+      "steps": [
+        {
+          "node": "read_request",
+          "update": {
+            "category": "wifi"
+          },
+          "state_after": {
+            "message": "I cannot connect to Wi-Fi.",
+            "category": "wifi"
+          }
+        },
+        {
+          "node": "wifi_help",
+          "update": {
+            "reply": "Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket."
+          },
+          "state_after": {
+            "message": "I cannot connect to Wi-Fi.",
+            "category": "wifi",
+            "reply": "Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket."
+          }
+        }
+      ],
+      "reply": "Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket."
+    }
+  ]
+}

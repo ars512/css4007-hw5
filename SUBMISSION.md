@@ -1,62 +1,124 @@
 # HW5 — My LangGraph helpdesk
 
+> **Honesty note.** No API key was available when I built this, so **no real LLM was ever called**. Every Part 2–3 log in `outputs/` was produced with `FakeHelpdeskModel` ([helpdesk/fake_model.py](helpdesk/fake_model.py)): a deterministic rule-based stand-in that sees only the message list and returns tool requests/answers, like a model would. It is not an LLM and its wording is canned. The real-model path (`--model openai`, `ChatOpenAI(...).bind_tools`) is implemented but **untested**; a real run still has to be saved by whoever has a key (`python -m helpdesk.run_scenarios --model openai`). Provider/model for the saved runs: *fake stand-in, no provider*.
+
 ## Part 1 — How the graph works
 
 ### My graph and state
 
-TODO: draw the first graph and explain what each node reads and changes. Answer the four state and routing questions in the brief.
+```text
+START → read_request ──(route_original)──┬─ wifi_help     → END
+                                         ├─ password_help → END
+                                         └─ other_help    → END
+```
+State (`HelpState`): `message`, `category`, `reply`.
+
+1. **Reads / changes.** `read_request` reads `message`, writes `category`. `wifi_help` / `password_help` read nothing needed (they look up `helpdesk.json`) and write `reply`. `other_help` writes the clarifying question as `reply`. The router reads `category` and writes nothing.
+2. **Update vs. conditional edge.** A node returns a *state update* (a dict merged into the state). A conditional edge is a function that only returns the *name of the next node*; it changes no state.
+3. **What the next node receives.** The current *whole graph state* (previous updates already merged), not just the previous node's update. In the trace, `wifi_help` can still see `message`.
+4. **START / END / compile.** `START` and `END` are virtual entry and exit nodes. `compile()` validates the graph (edges, reachable nodes) and returns the runnable object; before that it is only a description.
 
 ### Predictions before running
 
-| Message | Predicted route | Actual route | What I learned |
+| Message | Predicted route | Actual route (S01–S05 logs) | What I learned |
 | --- | --- | --- | --- |
-| I cannot connect to Wi-Fi. | | | |
-| I forgot my PASSWORD. | | | |
-| My laptop screen is broken. | | | |
-| My Wi-Fi password does not work. | | | |
+| I cannot connect to Wi-Fi. | wifi_help | read_request → wifi_help | `Wi-Fi` matches alias `wi-fi` |
+| I forgot my PASSWORD. | password_help | read_request → password_help | lowercasing makes it case-insensitive |
+| My laptop screen is broken. | other_help | read_request → other_help | anything unsupported falls to the question |
+| My Wi-Fi password does not work. | wifi_help (Wi-Fi rule is checked first) | read_request → wifi_help | predictions matched all four runs |
+
+For the mixed message, `category` becomes `password_wifi` (both topics found) but rule 1 (“contains wifi → `wifi_help`”) is evaluated first, so the user who really has a password problem receives Wi-Fi instructions. Trace S04: after `read_request` state = `{message, category: password_wifi}`; after `wifi_help` the `reply` is set ([outputs/S04.json](outputs/S04.json)).
 
 ### My change to the graph
 
-TODO: draw the graph with clarify_problem, show the new trace, and explain the difference. What does LangGraph control, and what do my functions decide?
+```text
+START → read_request ──(route_with_clarification)──┬─ wifi_help        → END
+                                                   ├─ password_help    → END
+                                                   ├─ other_help       → END
+                                                   └─ clarify_problem  → END   (new: both topics)
+```
+New trace S05: `START → read_request → clarify_problem → END`, reply “Is the problem connecting to Wi-Fi, or recovering your account password? …” ([outputs/S05.json](outputs/S05.json)). The *route* changed (a new node), not just the final sentence. Single-topic messages still route as before (tested).
+
+**What LangGraph controls:** running nodes in order, merging each returned update into the state, calling the conditional edge and following the name it returns, stopping at END. **What my Python decides:** how topics are detected (`detect_topics`), the routing rules inside `route_*`, the reply texts. No model is involved.
 
 ## Part 2 — Model and tools
 
-TODO: draw the model/tool loop. Answer the four questions in the brief. Record the model and provider, direct calls to each tool, and one actual run that uses multiple tools. Explain the loop limit.
+```text
+START → remember_preference → track_conversation → agent_model ─┬─ no tool_calls ───────────────→ END
+                                                      ▲         ├─ tool_calls, rounds < 4 → run_tools ─┐
+                                                      └─────────┴─ tool_calls, rounds ≥ 4 → limit_reached → END
+                                                                                  (run_tools → agent_model)
+```
+Model requests tool → `run_tools` executes it → `ToolMessage` appended → model sees it and either requests another tool or answers.
+
+Tools ([helpdesk/tools.py](helpdesk/tools.py)) are plain functions, each tested directly in `tests/test_tools.py`: `find_instructions(topic)`, `check_service_status(service, profile)`, `prepare_ticket(problem, steps_tried, …)` (refuses when problem or steps are missing; writes a local JSON using `ticket_template.json`; ticket id `TKT-<uuid>`).
+
+**Loop limit.** `tool_rounds` is reset to 0 each turn and incremented by `run_tools`. The limit (`MAX_TOOL_ROUNDS = 4`) is enforced on the conditional edge `route_after_model`: with pending tool calls and `tool_rounds ≥ 4` it routes to `limit_reached` instead of `run_tools`, which answers `I stopped because I reached the limit…` and sets `limit_reached`. Tested with a model that never stops asking for tools.
+
+**Actual multi-tool run (S06, second message, `normal`)**, from [outputs/S06.json](outputs/S06.json), model = fake stand-in:
+1. model requests `check_service_status(service=wifi)` → result `status: operational` (source `service_status.json`)
+2. model requests `prepare_ticket(problem=…, steps_tried=["enabled Wi-Fi","forgot the saved network"], service_status="wifi: operational")` → `TKT-…json` saved in [outputs/tickets/](outputs/tickets/)
+3. final answer: status operational, draft prepared, nothing sent.
+The first S06 message used `find_instructions(wifi)`.
+
+Same request, different snapshot: S07 `wifi_outage` → only `check_service_status`, answer says no ticket was prepared; S08 `status_unavailable` → only the status call, answer says it cannot confirm and asks whether to draft; S14 `recovery_outage` → checks `account_recovery`, reports a known outage, no repair time invented.
+
+Answers:
+1. **Run a tool or end?** The conditional edge `route_after_model` looks at the last AI message: has `tool_calls` (and the limit is not hit) → `run_tools`, otherwise END.
+2. **Who requests / executes?** The model only *requests* (`AIMessage.tool_calls`). My node `run_tools` looks the function up and *executes* it, injecting `user_id`, `thread_id`, status profile and ticket directory from the config, so the model can't choose them.
+3. **State change after a result.** `messages` gets one `ToolMessage` per call, `tool_rounds` increases by one, and `sources` records the data file used.
+4. **Difference from Part 1.** In Part 1 my code picks the next node from keywords. Here the *model* decides what to request next after seeing results, so the path (status first, then maybe a ticket) differs per snapshot; my code only enforces the limit and executes tools. With the fake model this “decision” is itself a hand-written rule set, so this part demonstrates the graph mechanics, not LLM judgement.
 
 ## Part 3 — Memory
 
-TODO: explain conversation state, thread_id, user identifier, user preference storage, and retrieval from helpdesk.json.
+Two separate stores:
+- **Conversation memory** — `messages`, `topic`, `steps_tried` in graph state, saved by `SqliteSaver` (`checkpoints.sqlite3`) under a **`thread_id`**. A `thread_id` identifies one conversation (one saved state history). A **user id** identifies a person across conversations. They are independent: the same user can have many threads; a thread has no authority over whose preferences are loaded.
+- **User memory** — `preferred_language` per `user_id` in `user_memory.sqlite3` ([helpdesk/memory.py](helpdesk/memory.py)), written by the `remember_preference` node when a message says “I prefer replies in X”. Nothing is loaded from `demo_users.json`.
+
+Both IDs are given by the program (CLI flags) via the graph config; the model never selects them.
+
+**Retrieval vs. memory.** Looking up Wi-Fi instructions is *retrieval*: general, user-independent knowledge read from the fixed reference file `helpdesk.json`. Recalling the language is *memory*: a fact about this user that was learned during interaction, didn't exist beforehand, and must be stored and scoped to that user.
 
 | Situation | Command used | Log file | What happened |
 | --- | --- | --- | --- |
-| Refer to an earlier message | | | |
-| Close, restart and resume | | | |
-| Same user, new conversation | | | |
-| Different user | | | |
+| Refer to an earlier message | S10: two `chat` calls, thread `s10` | [S10.json](outputs/S10.json) | Second message “Which steps did I already try?” answered from checkpointed state (`enabled Wi-Fi, forgot the saved network, tried reconnecting`); source: conversation_state |
+| Close, restart and resume | S11: separate processes, thread `restart-a` | [S11.json](outputs/S11.json) | New process, same storage; recalled Wi-Fi problem and steps without re-sending them |
+| Same user, new conversation | S12: `preference-a1` then `preference-a2` (restart between) | [S12.json](outputs/S12.json) | Source `user_memory: READ preferred_language=Kazakh`; no conversation state carried (`topic=None`) |
+| Different user | S13: `demo-user-b`, thread `isolation-b` | [S13.json](outputs/S13.json) | “No preferred language … no previous problem recorded”; no user_memory READ in sources |
+
+Limitation: the Kazakh “translation” is one canned sentence in the fake model; a real model would be asked (via the context block) to reply in the stored language, which I could not test.
 
 ## Part 4 — Running and checking my work
 
-TODO: point to the README setup steps, package versions, memory-reset instructions, tests and GitHub Actions workflow. Explain which mistake each test catches and which runs use a fake model.
+See [README.md](README.md): setup, Python 3.12, pinned [requirements.txt](requirements.txt), where memory lives (`local-storage/`) and how to clear it, the table “what each test catches”, and the CI workflow [.github/workflows/tests.yml](.github/workflows/tests.yml) (runs `pytest` on every push with no key). Tests and all scenario logs use the fake model; the real-model path is separate (`--model openai`). 20 tests pass locally. **CI has not been observed running** because I did not push (see below).
 
 ## Choices and limitations
 
-TODO: explain the storage and libraries I chose, why they fit this task, and what still does not work reliably.
+- **Storage:** SQLite for both stores (`langgraph-checkpoint-sqlite` as supplied; plain `sqlite3` for preferences) — zero setup, survives restarts, easy to delete.
+- **Rule-based extraction** (topic, steps, language) is deliberately simple: it ignores negations (“I did *not* restart”), supports a few step phrases, and only recognises “prefer … in X” / “reply in X”.
+- **Fake model** is not an LLM; real-LLM behaviour (conditional logic, language switching, tool choice) is unverified. Part 2 “model chose tools” is therefore demonstrated mechanically.
+- Ticket summary is a fixed sentence built from the category plus the user's extracted steps; no extra troubleshooting is invented.
+- Not pushed to GitHub: commits are local; the starter remote is not mine, so a fork has to be created and pushed by the owner.
 
 ## Supplied scenarios — my actual results
 
+Command for all: `python -m helpdesk.run_scenarios` (fake model). Each log starts with scenario id, command, snapshot, user and thread.
+
 | Scenario | Command or manual steps | Log file | What happened / what I changed |
 | --- | --- | --- | --- |
-| S01 — Simple Wi-Fi route | | | |
-| S02 — Case-insensitive password route | | | |
-| S03 — Unsupported request | | | |
-| S04 — Two topics before the graph change | | | |
-| S05 — Two topics after adding clarification | | | |
-| S06 — Instructions then local ticket | | | |
-| S07 — The same request during a Wi-Fi outage | | | |
-| S08 — Status source unavailable | | | |
-| S09 — Missing ticket details | | | |
-| S10 — Use the current conversation | | | |
-| S11 — Persist and recall after restart | | | |
-| S12 — Preference across threads without replay | | | |
-| S13 — Do not share memory between users | | | |
-| S14 — Password recovery outage | | | |
+| S01 — Simple Wi-Fi route | `cli part1 --message "I cannot connect to Wi-Fi."` | [S01](outputs/S01.json) | read_request → wifi_help; instructions returned |
+| S02 — Case-insensitive password route | `cli part1 --message "I forgot my PASSWORD."` | [S02](outputs/S02.json) | → password_help |
+| S03 — Unsupported request | `cli part1 …"My laptop screen is broken."` | [S03](outputs/S03.json) | → other_help, asks Wi-Fi or password |
+| S04 — Two topics before the change | `cli part1 … --variant original` | [S04](outputs/S04.json) | → wifi_help (Wi-Fi rule wins; wrong for a password problem) → motivated S05 |
+| S05 — Two topics after clarification | `cli part1 … --variant with_clarification` | [S05](outputs/S05.json) | → clarify_problem asks which problem first |
+| S06 — Instructions then local ticket | 2× `cli chat --profile normal` | [S06](outputs/S06.json) | find_instructions; then check_service_status (operational) → prepare_ticket; draft in outputs/tickets |
+| S07 — Same request during outage | `cli chat --profile wifi_outage` | [S07](outputs/S07.json) | status = outage → no ticket, no repair time |
+| S08 — Status source unavailable | `cli chat --profile status_unavailable` | [S08](outputs/S08.json) | status unknown → no ticket, asks whether to draft |
+| S09 — Missing ticket details | 2× `cli chat` thread s09 | [S09](outputs/S09.json) | first: asks problem and steps, no tool; second: draft with the user's steps, status “not checked” |
+| S10 — Use the current conversation | 2× `cli chat` thread s10 | [S10](outputs/S10.json) | recalled problem and steps from state |
+| S11 — Persist and recall after restart | `cli chat` ×2, separate processes | [S11](outputs/S11.json) | recalled from checkpoint after restart |
+| S12 — Preference across threads without replay | `cli chat` ×2, new thread | [S12](outputs/S12.json) | preference read from user memory, canned Kazakh sentence |
+| S13 — Do not share memory between users | `cli chat` user a then user b | [S13](outputs/S13.json) | user b sees nothing of user a |
+| S14 — Password recovery outage | `cli chat --profile recovery_outage` | [S14](outputs/S14.json) | looked up `account_recovery`, reported outage, no repair time |
+
+**What I would change if wrong:** S04 shows the original behaviour is itself the “bug” fixed by S05. Other scenarios behaved as specified on first full run; the issues I fixed during development were Windows console encoding for Kazakh output, and machine-specific paths leaking into logs (now removed).

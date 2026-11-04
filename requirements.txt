@@ -1,7 +1,9 @@
-# Starter dependencies. Install in a virtual environment.
-# After testing your implementation, replace these with the exact versions you used.
-langgraph
-langchain-openai
-langgraph-checkpoint-sqlite
-python-dotenv
-pytest
+# Pinned versions used for this homework (Python 3.12.x).
+langchain-core==1.7.5
+langchain-openai==1.7.4
+langgraph==1.2.19
+langgraph-checkpoint==4.3.1
+langgraph-checkpoint-sqlite==3.1.3
+langgraph-prebuilt==1.1.1
+pytest==9.2.0
+python-dotenv==1.2.4

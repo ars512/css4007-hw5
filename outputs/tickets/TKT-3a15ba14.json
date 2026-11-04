@@ -1,0 +1,17 @@
+{
+  "ticket_id": "TKT-3a15ba14",
+  "status": "draft",
+  "user_id": "demo-user-a",
+  "thread_id": "s06",
+  "category": "wifi",
+  "summary": "User reports an unresolved Wi-Fi problem.",
+  "steps_tried": [
+    "enabled Wi-Fi",
+    "forgot the saved network"
+  ],
+  "service_status": "wifi: operational",
+  "status_profile": "normal",
+  "reference_ids": [
+    "GUIDE-WIFI"
+  ]
+}

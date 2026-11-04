@@ -1,0 +1,133 @@
+{
+  "scenario": "S09",
+  "title": "Missing ticket details",
+  "part": 2,
+  "status_profile": "normal",
+  "graph_variant": null,
+  "reset_before": true,
+  "events": [
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s09 --profile normal --message \"Prepare a support ticket.\" --model fake",
+      "user_id": "demo-user-a",
+      "thread_id": "s09",
+      "message": "Prepare a support ticket.",
+      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "nodes": [
+        "remember_preference",
+        "track_conversation",
+        "agent_model"
+      ],
+      "sources": [
+        "conversation_state: topic=None steps_tried=[]"
+      ],
+      "trace": [
+        {
+          "node": "remember_preference",
+          "summary": {}
+        },
+        {
+          "node": "track_conversation",
+          "summary": {
+            "sources": [
+              "conversation_state: topic=None steps_tried=[]"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_answer": "I need a little more information first: what problem you are having and what you have already tried? What problem are you having, and what have you already tried?"
+          }
+        }
+      ],
+      "reply": "I need a little more information first: what problem you are having and what you have already tried? What problem are you having, and what have you already tried?",
+      "limit_reached": false
+    },
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s09 --profile normal --message \"The issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.\" --model fake",
+      "user_id": "demo-user-a",
+      "thread_id": "s09",
+      "message": "The issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.",
+      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "nodes": [
+        "remember_preference",
+        "track_conversation",
+        "agent_model",
+        "run_tools",
+        "agent_model"
+      ],
+      "sources": [
+        "conversation_state: topic=wifi steps_tried=['enabled Wi-Fi', 'tried reconnecting']"
+      ],
+      "trace": [
+        {
+          "node": "remember_preference",
+          "summary": {}
+        },
+        {
+          "node": "track_conversation",
+          "summary": {
+            "topic": "wifi",
+            "steps_tried": [
+              "enabled Wi-Fi",
+              "tried reconnecting"
+            ],
+            "sources": [
+              "conversation_state: topic=wifi steps_tried=['enabled Wi-Fi', 'tried reconnecting']"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_requests": [
+              {
+                "tool": "prepare_ticket",
+                "args": {
+                  "problem": "User reports an unresolved Wi-Fi problem.",
+                  "steps_tried": [
+                    "enabled Wi-Fi",
+                    "tried reconnecting"
+                  ],
+                  "category": "wifi",
+                  "service_status": null,
+                  "reference_ids": [
+                    "GUIDE-WIFI"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": "run_tools",
+          "summary": {
+            "tool_results": [
+              {
+                "tool": "prepare_ticket",
+                "result": {
+                  "ok": true,
+                  "ticket_id": "TKT-3b388f54",
+                  "file": "TKT-3b388f54.json",
+                  "sent": false,
+                  "message": "Local draft saved. Nothing was sent to a real helpdesk."
+                }
+              }
+            ],
+            "tool_rounds": 1
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_answer": "The service status was not checked. I prepared a local draft (TKT-3b388f54, file TKT-3b388f54.json) using the steps you told me you tried. Nothing has been sent."
+          }
+        }
+      ],
+      "reply": "The service status was not checked. I prepared a local draft (TKT-3b388f54, file TKT-3b388f54.json) using the steps you told me you tried. Nothing has been sent.",
+      "limit_reached": false
+    }
+  ]
+}

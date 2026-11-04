@@ -1,0 +1,47 @@
+{
+  "scenario": "S05",
+  "title": "Two topics after adding clarification",
+  "part": 1,
+  "status_profile": "normal",
+  "graph_variant": "with_clarification",
+  "reset_before": true,
+  "events": [
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli part1 --message \"My Wi-Fi password does not work.\" --variant with_clarification",
+      "user_id": "demo-user-a",
+      "thread_id": "s05",
+      "message": "My Wi-Fi password does not work.",
+      "nodes": [
+        "START",
+        "read_request",
+        "clarify_problem",
+        "END"
+      ],
+      "steps": [
+        {
+          "node": "read_request",
+          "update": {
+            "category": "password_wifi"
+          },
+          "state_after": {
+            "message": "My Wi-Fi password does not work.",
+            "category": "password_wifi"
+          }
+        },
+        {
+          "node": "clarify_problem",
+          "update": {
+            "reply": "Is the problem connecting to Wi-Fi, or recovering your account password? Tell me which one you want to solve first."
+          },
+          "state_after": {
+            "message": "My Wi-Fi password does not work.",
+            "category": "password_wifi",
+            "reply": "Is the problem connecting to Wi-Fi, or recovering your account password? Tell me which one you want to solve first."
+          }
+        }
+      ],
+      "reply": "Is the problem connecting to Wi-Fi, or recovering your account password? Tell me which one you want to solve first."
+    }
+  ]
+}

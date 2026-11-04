@@ -1,0 +1,90 @@
+{
+  "scenario": "S07",
+  "title": "The same request during a Wi-Fi outage",
+  "part": 2,
+  "status_profile": "wifi_outage",
+  "graph_variant": null,
+  "reset_before": true,
+  "events": [
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s07 --profile wifi_outage --message \"I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.\" --model fake",
+      "user_id": "demo-user-a",
+      "thread_id": "s07",
+      "message": "I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.",
+      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "nodes": [
+        "remember_preference",
+        "track_conversation",
+        "agent_model",
+        "run_tools",
+        "agent_model"
+      ],
+      "sources": [
+        "conversation_state: topic=wifi steps_tried=['enabled Wi-Fi', 'forgot the saved network']",
+        "data/service_status.json: check_service_status"
+      ],
+      "trace": [
+        {
+          "node": "remember_preference",
+          "summary": {}
+        },
+        {
+          "node": "track_conversation",
+          "summary": {
+            "topic": "wifi",
+            "steps_tried": [
+              "enabled Wi-Fi",
+              "forgot the saved network"
+            ],
+            "sources": [
+              "conversation_state: topic=wifi steps_tried=['enabled Wi-Fi', 'forgot the saved network']"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_requests": [
+              {
+                "tool": "check_service_status",
+                "args": {
+                  "service": "wifi"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": "run_tools",
+          "summary": {
+            "tool_results": [
+              {
+                "tool": "check_service_status",
+                "result": {
+                  "service": "wifi",
+                  "profile": "wifi_outage",
+                  "status": "outage",
+                  "message": "The demo Wi-Fi service is unavailable across campus. The fixture gives no repair time.",
+                  "source": "data/service_status.json"
+                }
+              }
+            ],
+            "tool_rounds": 1,
+            "sources": [
+              "data/service_status.json: check_service_status"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_answer": "The demo status source reports a wifi outage. Your request said to prepare a ticket if the service was operating, so I have not prepared that ticket. The data does not give a repair time."
+          }
+        }
+      ],
+      "reply": "The demo status source reports a wifi outage. Your request said to prepare a ticket if the service was operating, so I have not prepared that ticket. The data does not give a repair time.",
+      "limit_reached": false
+    }
+  ]
+}

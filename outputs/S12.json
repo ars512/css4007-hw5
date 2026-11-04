@@ -1,0 +1,148 @@
+{
+  "scenario": "S12",
+  "title": "Preference across threads without replay",
+  "part": 3,
+  "status_profile": "normal",
+  "graph_variant": null,
+  "reset_before": true,
+  "events": [
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread preference-a1 --profile normal --message \"Please remember that I prefer replies in Kazakh. I have a Wi-Fi problem.\" --model fake",
+      "user_id": "demo-user-a",
+      "thread_id": "preference-a1",
+      "message": "Please remember that I prefer replies in Kazakh. I have a Wi-Fi problem.",
+      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "nodes": [
+        "remember_preference",
+        "track_conversation",
+        "agent_model",
+        "run_tools",
+        "agent_model"
+      ],
+      "sources": [
+        "user_memory: WROTE preferred_language=Kazakh",
+        "user_memory: READ preferred_language=Kazakh",
+        "conversation_state: topic=wifi steps_tried=[]",
+        "data/helpdesk.json: find_instructions"
+      ],
+      "trace": [
+        {
+          "node": "remember_preference",
+          "summary": {
+            "language": "Kazakh",
+            "sources": [
+              "user_memory: WROTE preferred_language=Kazakh",
+              "user_memory: READ preferred_language=Kazakh"
+            ]
+          }
+        },
+        {
+          "node": "track_conversation",
+          "summary": {
+            "topic": "wifi",
+            "sources": [
+              "conversation_state: topic=wifi steps_tried=[]"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_requests": [
+              {
+                "tool": "find_instructions",
+                "args": {
+                  "topic": "wifi"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": "run_tools",
+          "summary": {
+            "tool_results": [
+              {
+                "tool": "find_instructions",
+                "result": {
+                  "found": true,
+                  "topic": "wifi",
+                  "instruction_id": "GUIDE-WIFI",
+                  "title": "Connect to the practice campus network",
+                  "steps": [
+                    "Check that Wi-Fi is enabled and airplane mode is off.",
+                    "Select the fictional Campus-Demo network.",
+                    "If connection fails, forget the saved network and try connecting again.",
+                    "If the problem remains, check the service status before preparing a ticket."
+                  ],
+                  "source": "data/helpdesk.json"
+                }
+              }
+            ],
+            "tool_rounds": 1,
+            "sources": [
+              "data/helpdesk.json: find_instructions"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_answer": "Noted: I will reply in Kazakh from now on. Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket."
+          }
+        }
+      ],
+      "reply": "Noted: I will reply in Kazakh from now on. Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket.",
+      "limit_reached": false
+    },
+    {
+      "action": "restart_process",
+      "note": "each message below runs in a new python process; storage kept"
+    },
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread preference-a2 --profile normal --message \"Which language did I ask you to use? What can you help with?\" --model fake",
+      "user_id": "demo-user-a",
+      "thread_id": "preference-a2",
+      "message": "Which language did I ask you to use? What can you help with?",
+      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "nodes": [
+        "remember_preference",
+        "track_conversation",
+        "agent_model"
+      ],
+      "sources": [
+        "user_memory: READ preferred_language=Kazakh",
+        "conversation_state: topic=None steps_tried=[]"
+      ],
+      "trace": [
+        {
+          "node": "remember_preference",
+          "summary": {
+            "language": "Kazakh",
+            "sources": [
+              "user_memory: READ preferred_language=Kazakh"
+            ]
+          }
+        },
+        {
+          "node": "track_conversation",
+          "summary": {
+            "sources": [
+              "conversation_state: topic=None steps_tried=[]"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_answer": "Сіз қазақ тілінде жауап беруді сұрадыңыз (Kazakh). I can help with: Wi-Fi troubleshooting, password recovery guidance, service status lookup, local ticket drafts."
+          }
+        }
+      ],
+      "reply": "Сіз қазақ тілінде жауап беруді сұрадыңыз (Kazakh). I can help with: Wi-Fi troubleshooting, password recovery guidance, service status lookup, local ticket drafts.",
+      "limit_reached": false
+    }
+  ]
+}
