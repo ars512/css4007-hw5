@@ -53,15 +53,21 @@ Model requests tool → `run_tools` executes it → `ToolMessage` appended → m
 
 Tools ([helpdesk/tools.py](helpdesk/tools.py)) are plain functions, each tested directly in `tests/test_tools.py`: `find_instructions(topic)`, `check_service_status(service, profile)`, `prepare_ticket(problem, steps_tried, …)` (refuses when problem or steps are missing; writes a local JSON using `ticket_template.json`; ticket id `TKT-<uuid>`).
 
+**Direct calls (no agent, no model)** — actual output of `python` calling the functions (also tested in `tests/test_tools.py`):
+
+
 **Loop limit.** `tool_rounds` is reset to 0 each turn and incremented by `run_tools`. The limit (`MAX_TOOL_ROUNDS = 4`) is enforced on the conditional edge `route_after_model`: with pending tool calls and `tool_rounds ≥ 4` it routes to `limit_reached` instead of `run_tools`, which answers `I stopped because I reached the limit…` and sets `limit_reached`. Tested with a model that never stops asking for tools.
 
-**Actual multi-tool run (S06, second message, `normal`)**, from [outputs/S06.json](outputs/S06.json), model = `gpt-4o-mini`:
-1. model requests `check_service_status(service=wifi)` → result `status: operational` (source `service_status.json`)
-2. model requests `prepare_ticket(problem=…, steps_tried=["enabled Wi-Fi","forgot the saved network"], service_status="wifi: operational")` → `TKT-…json` saved in [outputs/tickets/](outputs/tickets/)
-3. final answer: status operational, draft prepared, nothing sent.
-The first S06 message used `find_instructions(wifi)`.
+**Actual multi-tool run (S06, second message, `normal`)**, from [outputs/S06.json](outputs/S06.json), model = OpenAI `gpt-4o-mini`:
+1. model requests `check_service_status(service="wifi")` → result `status: operational` (source `service_status.json`)
+2. model requests `prepare_ticket({"problem": "Unable to connect to the Campus-Demo Wi-Fi network after enabling Wi-Fi and forgetting the saved network.", "steps_tried": ["enabled Wi-Fi", "forgot the saved network"], "category": "wifi", "service_status": "operational"})` → local draft `TKT-….json` saved in [outputs/tickets/](outputs/tickets/) (`sent: false`)
+3. final answer (quoted from the log): “The Wi-Fi service is operational, and I have prepared a local draft ticket regarding your issue with connecting to the Campus-Demo network.   **Ticket ID:** TKT-3dc44f4e   **Problem:** Unable to connect to the Campus-Demo Wi-Fi network after enabling Wi-Fi and forgetting the saved network.   **Steps Tried:** Enabled Wi-Fi, forgo”
+The first S06 message used `find_instructions(topic="wifi")`; loop limit was not reached (`limit_reached: false`). Node order of the second message: remember_preference → track_conversation → agent_model → run_tools → agent_model → run_tools → agent_model.
 
-Same request, different snapshot: S07 `wifi_outage` → only `check_service_status`, answer says no ticket was prepared; S08 `status_unavailable` → only the status call, answer says it cannot confirm and asks whether to draft; S14 `recovery_outage` → checks `account_recovery`, reports a known outage, no repair time invented.
+Same request, different snapshot (real model, same text, only `--profile` differs):
+- **S07 `wifi_outage`** → only `check_service_status` (outage); no ticket. Reply: “It appears that the demo Wi-Fi service is currently experiencing an outage across campus, and there is no estimated repair time available. Since the service is down, I cannot prepare a ticket for your connection issue at this moment.   Please try again later w”
+- **S08 `status_unavailable`** → only the status call (unknown); no ticket. Reply: “The Wi-Fi service status is currently unknown. I cannot assume it is operating. Please check back later or try again to see if the service status becomes available. If you need further assistance, let me know!” (it did **not** offer a ticket draft as SCENARIOS.md's example does, but it correctly refused to assume the service is operating.)
+- **S14 `recovery_outage`** → checks `account_recovery`, reports an outage, no repair time invented. Reply: “The password recovery service is currently experiencing an outage and is unavailable. Unfortunately, there is no information on when it will be repaired. If you need further assistance, feel free to ask!”
 
 Answers:
 1. **Run a tool or end?** The conditional edge `route_after_model` looks at the last AI message: has `tool_calls` (and the limit is not hit) → `run_tools`, otherwise END.
@@ -112,13 +118,13 @@ Command for all: `python -m helpdesk.run_scenarios --model openai` (model: gpt-4
 | S03 — Unsupported request | `cli part1 …"My laptop screen is broken."` | [S03](outputs/S03.json) | → other_help, asks Wi-Fi or password |
 | S04 — Two topics before the change | `cli part1 … --variant original` | [S04](outputs/S04.json) | → wifi_help (Wi-Fi rule wins; wrong for a password problem) → motivated S05 |
 | S05 — Two topics after clarification | `cli part1 … --variant with_clarification` | [S05](outputs/S05.json) | → clarify_problem asks which problem first |
-| S06 — Instructions then local ticket | 2× `cli chat --profile normal` | [S06](outputs/S06.json) | find_instructions; then check_service_status (operational) → prepare_ticket; draft in outputs/tickets |
-| S07 — Same request during outage | `cli chat --profile wifi_outage` | [S07](outputs/S07.json) | status = outage → no ticket, no repair time |
-| S08 — Status source unavailable | `cli chat --profile status_unavailable` | [S08](outputs/S08.json) | status unknown → no ticket, asks whether to draft |
-| S09 — Missing ticket details | 2× `cli chat` thread s09 | [S09](outputs/S09.json) | first: asks problem and steps, no tool; second: draft with the user's steps, status “not checked” |
-| S10 — Use the current conversation | 2× `cli chat` thread s10 | [S10](outputs/S10.json) | recalled problem and steps from state |
-| S11 — Persist and recall after restart | `cli chat` ×2, separate processes | [S11](outputs/S11.json) | recalled from checkpoint after restart |
-| S12 — Preference across threads without replay | `cli chat` ×2, new thread | [S12](outputs/S12.json) | preference read from user memory, canned Kazakh sentence |
+| S06 — Instructions then local ticket | 2× `cli chat --profile normal` | [S06](outputs/S06.json) | find_instructions; then check_service_status (operational) → prepare_ticket; draft in outputs/tickets (file name in the log) |
+| S07 — Same request during outage | `cli chat --profile wifi_outage` | [S07](outputs/S07.json) | status = outage → no ticket, says no repair time is given |
+| S08 — Status source unavailable | `cli chat --profile status_unavailable` | [S08](outputs/S08.json) | status unknown → no ticket; says it cannot assume operating; did not offer a draft (differs from the example wording, same decision) |
+| S09 — Missing ticket details | 2× `cli chat` thread s09 | [S09](outputs/S09.json) | first: asked for problem and steps, no tool called; second: model checked status (operational) then prepared a draft with the user's steps; ticket records `operational` |
+| S10 — Use the current conversation | 2× `cli chat` thread s10 | [S10](outputs/S10.json) | recalled the three steps from checkpointed state |
+| S11 — Persist and recall after restart | `cli chat` ×2, separate processes | [S11](outputs/S11.json) | after process restart replied (in Kazakh, the saved preference) with the Wi-Fi problem and steps |
+| S12 — Preference across threads without replay | `cli chat` ×2, new thread | [S12](outputs/S12.json) | `user_memory: READ preferred_language=Kazakh` in the new thread; reply in Kazakh; no tool called |
 | S13 — Do not share memory between users | `cli chat` user a then user b | [S13](outputs/S13.json) | user b sees nothing of user a |
 | S14 — Password recovery outage | `cli chat --profile recovery_outage` | [S14](outputs/S14.json) | looked up `account_recovery`, reported outage, no repair time |
 
