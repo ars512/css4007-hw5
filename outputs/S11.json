@@ -8,11 +8,11 @@
   "events": [
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread restart-a --profile normal --message \"Please remember that I prefer replies in Kazakh. My issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread restart-a --profile normal --message \"Please remember that I prefer replies in Kazakh. My issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "restart-a",
       "message": "Please remember that I prefer replies in Kazakh. My issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
@@ -24,7 +24,7 @@
         "user_memory: WROTE preferred_language=Kazakh",
         "user_memory: READ preferred_language=Kazakh",
         "conversation_state: topic=wifi steps_tried=['enabled Wi-Fi', 'tried reconnecting']",
-        "data/helpdesk.json: find_instructions"
+        "data/service_status.json: check_service_status"
       ],
       "trace": [
         {
@@ -55,9 +55,9 @@
           "summary": {
             "model_requests": [
               {
-                "tool": "find_instructions",
+                "tool": "check_service_status",
                 "args": {
-                  "topic": "wifi"
+                  "service": "wifi"
                 }
               }
             ]
@@ -68,36 +68,30 @@
           "summary": {
             "tool_results": [
               {
-                "tool": "find_instructions",
+                "tool": "check_service_status",
                 "result": {
-                  "found": true,
-                  "topic": "wifi",
-                  "instruction_id": "GUIDE-WIFI",
-                  "title": "Connect to the practice campus network",
-                  "steps": [
-                    "Check that Wi-Fi is enabled and airplane mode is off.",
-                    "Select the fictional Campus-Demo network.",
-                    "If connection fails, forget the saved network and try connecting again.",
-                    "If the problem remains, check the service status before preparing a ticket."
-                  ],
-                  "source": "data/helpdesk.json"
+                  "service": "wifi",
+                  "profile": "normal",
+                  "status": "operational",
+                  "message": "The demo Wi-Fi service has no reported outage.",
+                  "source": "data/service_status.json"
                 }
               }
             ],
             "tool_rounds": 1,
             "sources": [
-              "data/helpdesk.json: find_instructions"
+              "data/service_status.json: check_service_status"
             ]
           }
         },
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "Noted: I will reply in Kazakh from now on. Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket."
+            "model_answer": "Wi-Fi қызметі жұмыс істеп тұр, ешқандай ақау жоқ. Сіз Wi-Fi-ды қосып, қайта қосылуға тырысқан екенсіз. \n\nКелесі қадам ретінде, Wi-Fi желісін ұмытуды (forget) және қайта қосылуды (reconnect) ұсынамын. Егер бұл да көмектеспесе, мен сіз үшін билет дайындай аламын. Сіз қандай қосымша әрекеттер жасадыңыз?"
           }
         }
       ],
-      "reply": "Noted: I will reply in Kazakh from now on. Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket.",
+      "reply": "Wi-Fi қызметі жұмыс істеп тұр, ешқандай ақау жоқ. Сіз Wi-Fi-ды қосып, қайта қосылуға тырысқан екенсіз. \n\nКелесі қадам ретінде, Wi-Fi желісін ұмытуды (forget) және қайта қосылуды (reconnect) ұсынамын. Егер бұл да көмектеспесе, мен сіз үшін билет дайындай аламын. Сіз қандай қосымша әрекеттер жасадыңыз?",
       "limit_reached": false
     },
     {
@@ -106,11 +100,11 @@
     },
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread restart-a --profile normal --message \"Which problem and steps did we discuss?\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread restart-a --profile normal --message \"Which problem and steps did we discuss?\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "restart-a",
       "message": "Which problem and steps did we discuss?",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
@@ -146,11 +140,11 @@
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "You reported a Wi-Fi problem and said you tried: enabled Wi-Fi, tried reconnecting."
+            "model_answer": "Біз Wi-Fi мәселесін талқыладық. Сіз Wi-Fi-ды қосып, қайта қосылуға тырысқансыз. Егер сіз қосымша әрекеттер жасаған болсаңыз, оларды айтып беріңіз, мен сіз үшін билет дайындай аламын."
           }
         }
       ],
-      "reply": "You reported a Wi-Fi problem and said you tried: enabled Wi-Fi, tried reconnecting.",
+      "reply": "Біз Wi-Fi мәселесін талқыладық. Сіз Wi-Fi-ды қосып, қайта қосылуға тырысқансыз. Егер сіз қосымша әрекеттер жасаған болсаңыз, оларды айтып беріңіз, мен сіз үшін билет дайындай аламын.",
       "limit_reached": false
     }
   ]

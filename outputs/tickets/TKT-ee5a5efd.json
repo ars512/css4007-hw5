@@ -1,0 +1,15 @@
+{
+  "ticket_id": "TKT-ee5a5efd",
+  "status": "draft",
+  "user_id": "demo-user-a",
+  "thread_id": "s09",
+  "category": "wifi",
+  "summary": "Wi-Fi connection fails despite enabling it and trying to reconnect.",
+  "steps_tried": [
+    "enabled Wi-Fi",
+    "tried reconnecting"
+  ],
+  "service_status": "operational",
+  "status_profile": "normal",
+  "reference_ids": []
+}

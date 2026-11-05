@@ -8,11 +8,11 @@
   "events": [
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s08 --profile status_unavailable --message \"Check whether Wi-Fi is down. If it is operating, prepare a ticket. I already enabled Wi-Fi and reconnected, with no success.\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s08 --profile status_unavailable --message \"Check whether Wi-Fi is down. If it is operating, prepare a ticket. I already enabled Wi-Fi and reconnected, with no success.\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "s08",
       "message": "Check whether Wi-Fi is down. If it is operating, prepare a ticket. I already enabled Wi-Fi and reconnected, with no success.",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
@@ -79,11 +79,11 @@
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "I could not determine the wifi status. I cannot confirm that it is operating. Would you like a ticket draft explaining that the status could not be checked?"
+            "model_answer": "The Wi-Fi service status is currently unknown. I cannot assume it is operating. Please check back later or try again to see if the service status becomes available. If you need further assistance, let me know!"
           }
         }
       ],
-      "reply": "I could not determine the wifi status. I cannot confirm that it is operating. Would you like a ticket draft explaining that the status could not be checked?",
+      "reply": "The Wi-Fi service status is currently unknown. I cannot assume it is operating. Please check back later or try again to see if the service status becomes available. If you need further assistance, let me know!",
       "limit_reached": false
     }
   ]

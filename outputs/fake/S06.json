@@ -1,0 +1,214 @@
+{
+  "scenario": "S06",
+  "title": "Instructions then local ticket",
+  "part": 2,
+  "status_profile": "normal",
+  "graph_variant": null,
+  "reset_before": true,
+  "events": [
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s06 --profile normal --message \"Show me the Wi-Fi troubleshooting steps.\" --model fake",
+      "user_id": "demo-user-a",
+      "thread_id": "s06",
+      "message": "Show me the Wi-Fi troubleshooting steps.",
+      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "nodes": [
+        "remember_preference",
+        "track_conversation",
+        "agent_model",
+        "run_tools",
+        "agent_model"
+      ],
+      "sources": [
+        "conversation_state: topic=wifi steps_tried=[]",
+        "data/helpdesk.json: find_instructions"
+      ],
+      "trace": [
+        {
+          "node": "remember_preference",
+          "summary": {}
+        },
+        {
+          "node": "track_conversation",
+          "summary": {
+            "topic": "wifi",
+            "sources": [
+              "conversation_state: topic=wifi steps_tried=[]"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_requests": [
+              {
+                "tool": "find_instructions",
+                "args": {
+                  "topic": "wifi"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": "run_tools",
+          "summary": {
+            "tool_results": [
+              {
+                "tool": "find_instructions",
+                "result": {
+                  "found": true,
+                  "topic": "wifi",
+                  "instruction_id": "GUIDE-WIFI",
+                  "title": "Connect to the practice campus network",
+                  "steps": [
+                    "Check that Wi-Fi is enabled and airplane mode is off.",
+                    "Select the fictional Campus-Demo network.",
+                    "If connection fails, forget the saved network and try connecting again.",
+                    "If the problem remains, check the service status before preparing a ticket."
+                  ],
+                  "source": "data/helpdesk.json"
+                }
+              }
+            ],
+            "tool_rounds": 1,
+            "sources": [
+              "data/helpdesk.json: find_instructions"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_answer": "Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket."
+          }
+        }
+      ],
+      "reply": "Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket.",
+      "limit_reached": false
+    },
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s06 --profile normal --message \"I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.\" --model fake",
+      "user_id": "demo-user-a",
+      "thread_id": "s06",
+      "message": "I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.",
+      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "nodes": [
+        "remember_preference",
+        "track_conversation",
+        "agent_model",
+        "run_tools",
+        "agent_model",
+        "run_tools",
+        "agent_model"
+      ],
+      "sources": [
+        "conversation_state: topic=wifi steps_tried=['enabled Wi-Fi', 'forgot the saved network']",
+        "data/service_status.json: check_service_status"
+      ],
+      "trace": [
+        {
+          "node": "remember_preference",
+          "summary": {}
+        },
+        {
+          "node": "track_conversation",
+          "summary": {
+            "topic": "wifi",
+            "steps_tried": [
+              "enabled Wi-Fi",
+              "forgot the saved network"
+            ],
+            "sources": [
+              "conversation_state: topic=wifi steps_tried=['enabled Wi-Fi', 'forgot the saved network']"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_requests": [
+              {
+                "tool": "check_service_status",
+                "args": {
+                  "service": "wifi"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": "run_tools",
+          "summary": {
+            "tool_results": [
+              {
+                "tool": "check_service_status",
+                "result": {
+                  "service": "wifi",
+                  "profile": "normal",
+                  "status": "operational",
+                  "message": "The demo Wi-Fi service has no reported outage.",
+                  "source": "data/service_status.json"
+                }
+              }
+            ],
+            "tool_rounds": 1,
+            "sources": [
+              "data/service_status.json: check_service_status"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_requests": [
+              {
+                "tool": "prepare_ticket",
+                "args": {
+                  "problem": "User reports an unresolved Wi-Fi problem.",
+                  "steps_tried": [
+                    "enabled Wi-Fi",
+                    "forgot the saved network"
+                  ],
+                  "category": "wifi",
+                  "service_status": "wifi: operational",
+                  "reference_ids": [
+                    "GUIDE-WIFI"
+                  ]
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": "run_tools",
+          "summary": {
+            "tool_results": [
+              {
+                "tool": "prepare_ticket",
+                "result": {
+                  "ok": true,
+                  "ticket_id": "TKT-3a15ba14",
+                  "file": "TKT-3a15ba14.json",
+                  "sent": false,
+                  "message": "Local draft saved. Nothing was sent to a real helpdesk."
+                }
+              }
+            ],
+            "tool_rounds": 2
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_answer": "The demo status source reports wifi is operational. I prepared a local draft (TKT-3a15ba14, file TKT-3a15ba14.json) using the steps you told me you tried. Nothing has been sent."
+          }
+        }
+      ],
+      "reply": "The demo status source reports wifi is operational. I prepared a local draft (TKT-3a15ba14, file TKT-3a15ba14.json) using the steps you told me you tried. Nothing has been sent.",
+      "limit_reached": false
+    }
+  ]
+}

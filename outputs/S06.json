@@ -8,11 +8,11 @@
   "events": [
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s06 --profile normal --message \"Show me the Wi-Fi troubleshooting steps.\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s06 --profile normal --message \"Show me the Wi-Fi troubleshooting steps.\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "s06",
       "message": "Show me the Wi-Fi troubleshooting steps.",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
@@ -81,20 +81,20 @@
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket."
+            "model_answer": "Here are the Wi-Fi troubleshooting steps:\n\n1. Check that Wi-Fi is enabled and airplane mode is off.\n2. Select the fictional Campus-Demo network.\n3. If the connection fails, forget the saved network and try connecting again.\n4. If the problem remains, check the service status before preparing a ticket.\n\nIf you need further assistance, let me know!"
           }
         }
       ],
-      "reply": "Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket.",
+      "reply": "Here are the Wi-Fi troubleshooting steps:\n\n1. Check that Wi-Fi is enabled and airplane mode is off.\n2. Select the fictional Campus-Demo network.\n3. If the connection fails, forget the saved network and try connecting again.\n4. If the problem remains, check the service status before preparing a ticket.\n\nIf you need further assistance, let me know!",
       "limit_reached": false
     },
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s06 --profile normal --message \"I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s06 --profile normal --message \"I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "s06",
       "message": "I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
@@ -167,16 +167,13 @@
               {
                 "tool": "prepare_ticket",
                 "args": {
-                  "problem": "User reports an unresolved Wi-Fi problem.",
+                  "problem": "Unable to connect to the Campus-Demo Wi-Fi network after enabling Wi-Fi and forgetting the saved network.",
                   "steps_tried": [
                     "enabled Wi-Fi",
                     "forgot the saved network"
                   ],
                   "category": "wifi",
-                  "service_status": "wifi: operational",
-                  "reference_ids": [
-                    "GUIDE-WIFI"
-                  ]
+                  "service_status": "operational"
                 }
               }
             ]
@@ -190,8 +187,8 @@
                 "tool": "prepare_ticket",
                 "result": {
                   "ok": true,
-                  "ticket_id": "TKT-3a15ba14",
-                  "file": "TKT-3a15ba14.json",
+                  "ticket_id": "TKT-3dc44f4e",
+                  "file": "TKT-3dc44f4e.json",
                   "sent": false,
                   "message": "Local draft saved. Nothing was sent to a real helpdesk."
                 }
@@ -203,11 +200,11 @@
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "The demo status source reports wifi is operational. I prepared a local draft (TKT-3a15ba14, file TKT-3a15ba14.json) using the steps you told me you tried. Nothing has been sent."
+            "model_answer": "The Wi-Fi service is operational, and I have prepared a local draft ticket regarding your issue with connecting to the Campus-Demo network. \n\n**Ticket ID:** TKT-3dc44f4e  \n**Problem:** Unable to connect to the Campus-Demo Wi-Fi network after enabling Wi-Fi and forgetting the saved network.  \n**Steps Tried:** Enabled Wi-Fi, forgot the saved network.\n\nPlease note that this is just a local draft and nothing has been sent to a real helpdesk. If you need further assistance, feel free to ask!"
           }
         }
       ],
-      "reply": "The demo status source reports wifi is operational. I prepared a local draft (TKT-3a15ba14, file TKT-3a15ba14.json) using the steps you told me you tried. Nothing has been sent.",
+      "reply": "The Wi-Fi service is operational, and I have prepared a local draft ticket regarding your issue with connecting to the Campus-Demo network. \n\n**Ticket ID:** TKT-3dc44f4e  \n**Problem:** Unable to connect to the Campus-Demo Wi-Fi network after enabling Wi-Fi and forgetting the saved network.  \n**Steps Tried:** Enabled Wi-Fi, forgot the saved network.\n\nPlease note that this is just a local draft and nothing has been sent to a real helpdesk. If you need further assistance, feel free to ask!",
       "limit_reached": false
     }
   ]

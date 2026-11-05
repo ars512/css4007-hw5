@@ -41,7 +41,7 @@ Each invocation is a separate process, so running it again with the same `--user
 
 Run all scenarios S01–S14 (each message in its own process; writes `outputs/S01.json … S14.json` and `outputs/tickets/`):
 ```powershell
-python -m helpdesk.run_scenarios                 # fake model
+python -m helpdesk.run_scenarios                 # fake model (no key)
 python -m helpdesk.run_scenarios --ids S06 S07
 python -m helpdesk.run_scenarios --model openai  # real model, needs .env
 ```

@@ -1,0 +1,47 @@
+{
+  "scenario": "S02",
+  "title": "Case-insensitive password route",
+  "part": 1,
+  "status_profile": "normal",
+  "graph_variant": null,
+  "reset_before": true,
+  "events": [
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli part1 --message \"I forgot my PASSWORD.\" --variant original",
+      "user_id": "demo-user-a",
+      "thread_id": "s02",
+      "message": "I forgot my PASSWORD.",
+      "nodes": [
+        "START",
+        "read_request",
+        "password_help",
+        "END"
+      ],
+      "steps": [
+        {
+          "node": "read_request",
+          "update": {
+            "category": "password"
+          },
+          "state_after": {
+            "message": "I forgot my PASSWORD.",
+            "category": "password"
+          }
+        },
+        {
+          "node": "password_help",
+          "update": {
+            "reply": "Recover access to the practice account [GUIDE-PASSWORD]: 1. Open the practice sign-in screen and choose Forgot password. 2. Follow the recovery instructions shown by the practice application. 3. If recovery is unavailable, prepare a ticket describing the error. 4. Never include a password or recovery code in a ticket."
+          },
+          "state_after": {
+            "message": "I forgot my PASSWORD.",
+            "category": "password",
+            "reply": "Recover access to the practice account [GUIDE-PASSWORD]: 1. Open the practice sign-in screen and choose Forgot password. 2. Follow the recovery instructions shown by the practice application. 3. If recovery is unavailable, prepare a ticket describing the error. 4. Never include a password or recovery code in a ticket."
+          }
+        }
+      ],
+      "reply": "Recover access to the practice account [GUIDE-PASSWORD]: 1. Open the practice sign-in screen and choose Forgot password. 2. Follow the recovery instructions shown by the practice application. 3. If recovery is unavailable, prepare a ticket describing the error. 4. Never include a password or recovery code in a ticket."
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "scenario": "S03",
+  "title": "Unsupported request",
+  "part": 1,
+  "status_profile": "normal",
+  "graph_variant": null,
+  "reset_before": true,
+  "events": [
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli part1 --message \"My laptop screen is broken.\" --variant original",
+      "user_id": "demo-user-a",
+      "thread_id": "s03",
+      "message": "My laptop screen is broken.",
+      "nodes": [
+        "START",
+        "read_request",
+        "other_help",
+        "END"
+      ],
+      "steps": [
+        {
+          "node": "read_request",
+          "update": {
+            "category": "other"
+          },
+          "state_after": {
+            "message": "My laptop screen is broken.",
+            "category": "other"
+          }
+        },
+        {
+          "node": "other_help",
+          "update": {
+            "reply": "Is your problem about Wi-Fi or about a password?"
+          },
+          "state_after": {
+            "message": "My laptop screen is broken.",
+            "category": "other",
+            "reply": "Is your problem about Wi-Fi or about a password?"
+          }
+        }
+      ],
+      "reply": "Is your problem about Wi-Fi or about a password?"
+    }
+  ]
+}

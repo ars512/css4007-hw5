@@ -1,0 +1,15 @@
+{
+  "ticket_id": "TKT-3dc44f4e",
+  "status": "draft",
+  "user_id": "demo-user-a",
+  "thread_id": "s06",
+  "category": "wifi",
+  "summary": "Unable to connect to the Campus-Demo Wi-Fi network after enabling Wi-Fi and forgetting the saved network.",
+  "steps_tried": [
+    "enabled Wi-Fi",
+    "forgot the saved network"
+  ],
+  "service_status": "operational",
+  "status_profile": "normal",
+  "reference_ids": []
+}

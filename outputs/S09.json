@@ -8,11 +8,11 @@
   "events": [
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s09 --profile normal --message \"Prepare a support ticket.\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s09 --profile normal --message \"Prepare a support ticket.\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "s09",
       "message": "Prepare a support ticket.",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
@@ -37,29 +37,32 @@
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "I need a little more information first: what problem you are having and what you have already tried? What problem are you having, and what have you already tried?"
+            "model_answer": "Could you please provide details about the problem you're experiencing and any steps you've already tried? This will help me prepare the ticket accurately."
           }
         }
       ],
-      "reply": "I need a little more information first: what problem you are having and what you have already tried? What problem are you having, and what have you already tried?",
+      "reply": "Could you please provide details about the problem you're experiencing and any steps you've already tried? This will help me prepare the ticket accurately.",
       "limit_reached": false
     },
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s09 --profile normal --message \"The issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s09 --profile normal --message \"The issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "s09",
       "message": "The issue is Wi-Fi. I enabled it and tried reconnecting, but it still fails.",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
         "agent_model",
         "run_tools",
+        "agent_model",
+        "run_tools",
         "agent_model"
       ],
       "sources": [
-        "conversation_state: topic=wifi steps_tried=['enabled Wi-Fi', 'tried reconnecting']"
+        "conversation_state: topic=wifi steps_tried=['enabled Wi-Fi', 'tried reconnecting']",
+        "data/service_status.json: check_service_status"
       ],
       "trace": [
         {
@@ -84,18 +87,49 @@
           "summary": {
             "model_requests": [
               {
+                "tool": "check_service_status",
+                "args": {
+                  "service": "wifi"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": "run_tools",
+          "summary": {
+            "tool_results": [
+              {
+                "tool": "check_service_status",
+                "result": {
+                  "service": "wifi",
+                  "profile": "normal",
+                  "status": "operational",
+                  "message": "The demo Wi-Fi service has no reported outage.",
+                  "source": "data/service_status.json"
+                }
+              }
+            ],
+            "tool_rounds": 1,
+            "sources": [
+              "data/service_status.json: check_service_status"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_requests": [
+              {
                 "tool": "prepare_ticket",
                 "args": {
-                  "problem": "User reports an unresolved Wi-Fi problem.",
+                  "problem": "Wi-Fi connection fails despite enabling it and trying to reconnect.",
                   "steps_tried": [
                     "enabled Wi-Fi",
                     "tried reconnecting"
                   ],
                   "category": "wifi",
-                  "service_status": null,
-                  "reference_ids": [
-                    "GUIDE-WIFI"
-                  ]
+                  "service_status": "operational"
                 }
               }
             ]
@@ -109,24 +143,24 @@
                 "tool": "prepare_ticket",
                 "result": {
                   "ok": true,
-                  "ticket_id": "TKT-3b388f54",
-                  "file": "TKT-3b388f54.json",
+                  "ticket_id": "TKT-ee5a5efd",
+                  "file": "TKT-ee5a5efd.json",
                   "sent": false,
                   "message": "Local draft saved. Nothing was sent to a real helpdesk."
                 }
               }
             ],
-            "tool_rounds": 1
+            "tool_rounds": 2
           }
         },
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "The service status was not checked. I prepared a local draft (TKT-3b388f54, file TKT-3b388f54.json) using the steps you told me you tried. Nothing has been sent."
+            "model_answer": "I have prepared a support ticket for your Wi-Fi issue. Here are the details:\n\n- **Problem:** Wi-Fi connection fails despite enabling it and trying to reconnect.\n- **Steps Tried:** Enabled Wi-Fi, tried reconnecting.\n- **Service Status:** Operational.\n\nThe ticket has been saved as a local draft (ID: TKT-ee5a5efd). Please note that nothing has been sent to a real helpdesk. If you need further assistance, feel free to ask!"
           }
         }
       ],
-      "reply": "The service status was not checked. I prepared a local draft (TKT-3b388f54, file TKT-3b388f54.json) using the steps you told me you tried. Nothing has been sent.",
+      "reply": "I have prepared a support ticket for your Wi-Fi issue. Here are the details:\n\n- **Problem:** Wi-Fi connection fails despite enabling it and trying to reconnect.\n- **Steps Tried:** Enabled Wi-Fi, tried reconnecting.\n- **Service Status:** Operational.\n\nThe ticket has been saved as a local draft (ID: TKT-ee5a5efd). Please note that nothing has been sent to a real helpdesk. If you need further assistance, feel free to ask!",
       "limit_reached": false
     }
   ]

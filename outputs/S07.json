@@ -8,11 +8,11 @@
   "events": [
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s07 --profile wifi_outage --message \"I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s07 --profile wifi_outage --message \"I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "s07",
       "message": "I enabled Wi-Fi and forgot the saved network, but Campus-Demo still will not connect. Check whether Wi-Fi is down. If it is operating, prepare a ticket about this problem.",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
@@ -79,11 +79,11 @@
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "The demo status source reports a wifi outage. Your request said to prepare a ticket if the service was operating, so I have not prepared that ticket. The data does not give a repair time."
+            "model_answer": "It appears that the demo Wi-Fi service is currently experiencing an outage across campus, and there is no estimated repair time available. Since the service is down, I cannot prepare a ticket for your connection issue at this moment. \n\nPlease try again later when the Wi-Fi service is restored. If you need further assistance, feel free to ask!"
           }
         }
       ],
-      "reply": "The demo status source reports a wifi outage. Your request said to prepare a ticket if the service was operating, so I have not prepared that ticket. The data does not give a repair time.",
+      "reply": "It appears that the demo Wi-Fi service is currently experiencing an outage across campus, and there is no estimated repair time available. Since the service is down, I cannot prepare a ticket for your connection issue at this moment. \n\nPlease try again later when the Wi-Fi service is restored. If you need further assistance, feel free to ask!",
       "limit_reached": false
     }
   ]

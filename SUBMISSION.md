@@ -1,6 +1,6 @@
 # HW5 — My LangGraph helpdesk
 
-> **Honesty note.** No API key was available when I built this, so **no real LLM was ever called**. Every Part 2–3 log in `outputs/` was produced with `FakeHelpdeskModel` ([helpdesk/fake_model.py](helpdesk/fake_model.py)): a deterministic rule-based stand-in that sees only the message list and returns tool requests/answers, like a model would. It is not an LLM and its wording is canned. The real-model path (`--model openai`, `ChatOpenAI(...).bind_tools`) is implemented but **untested**; a real run still has to be saved by whoever has a key (`python -m helpdesk.run_scenarios --model openai`). Provider/model for the saved runs: *fake stand-in, no provider*.
+> **Models used.** The logs in `outputs/S01.json … S14.json` (and `outputs/tickets/`) come from a **real model: OpenAI `gpt-4o-mini`** via `langchain-openai` (`ChatOpenAI(...).bind_tools`), run with `python -m helpdesk.run_scenarios --model openai`. Part 1 (S01–S05) uses no model. Tests and CI use `FakeHelpdeskModel` ([helpdesk/fake_model.py](helpdesk/fake_model.py)), a clearly labelled deterministic rule-based stand-in, not an LLM; its earlier runs are kept in `outputs/fake/` for comparison. LLM wording is non-deterministic, so a rerun will word replies differently.
 
 ## Part 1 — How the graph works
 
@@ -55,7 +55,7 @@ Tools ([helpdesk/tools.py](helpdesk/tools.py)) are plain functions, each tested 
 
 **Loop limit.** `tool_rounds` is reset to 0 each turn and incremented by `run_tools`. The limit (`MAX_TOOL_ROUNDS = 4`) is enforced on the conditional edge `route_after_model`: with pending tool calls and `tool_rounds ≥ 4` it routes to `limit_reached` instead of `run_tools`, which answers `I stopped because I reached the limit…` and sets `limit_reached`. Tested with a model that never stops asking for tools.
 
-**Actual multi-tool run (S06, second message, `normal`)**, from [outputs/S06.json](outputs/S06.json), model = fake stand-in:
+**Actual multi-tool run (S06, second message, `normal`)**, from [outputs/S06.json](outputs/S06.json), model = `gpt-4o-mini`:
 1. model requests `check_service_status(service=wifi)` → result `status: operational` (source `service_status.json`)
 2. model requests `prepare_ticket(problem=…, steps_tried=["enabled Wi-Fi","forgot the saved network"], service_status="wifi: operational")` → `TKT-…json` saved in [outputs/tickets/](outputs/tickets/)
 3. final answer: status operational, draft prepared, nothing sent.
@@ -67,7 +67,7 @@ Answers:
 1. **Run a tool or end?** The conditional edge `route_after_model` looks at the last AI message: has `tool_calls` (and the limit is not hit) → `run_tools`, otherwise END.
 2. **Who requests / executes?** The model only *requests* (`AIMessage.tool_calls`). My node `run_tools` looks the function up and *executes* it, injecting `user_id`, `thread_id`, status profile and ticket directory from the config, so the model can't choose them.
 3. **State change after a result.** `messages` gets one `ToolMessage` per call, `tool_rounds` increases by one, and `sources` records the data file used.
-4. **Difference from Part 1.** In Part 1 my code picks the next node from keywords. Here the *model* decides what to request next after seeing results, so the path (status first, then maybe a ticket) differs per snapshot; my code only enforces the limit and executes tools. With the fake model this “decision” is itself a hand-written rule set, so this part demonstrates the graph mechanics, not LLM judgement.
+4. **Difference from Part 1.** In Part 1 my code picks the next node from keywords. Here the *model* decides what to request next after seeing results, so the path (status first, then maybe a ticket) differs per snapshot; my code only enforces the limit and executes tools. In the real runs (S06–S09, S14) `gpt-4o-mini` itself chose to check the status first and to ticket only when it was operational; the fake model only imitates that.
 
 ## Part 3 — Memory
 
@@ -86,23 +86,24 @@ Both IDs are given by the program (CLI flags) via the graph config; the model ne
 | Same user, new conversation | S12: `preference-a1` then `preference-a2` (restart between) | [S12.json](outputs/S12.json) | Source `user_memory: READ preferred_language=Kazakh`; no conversation state carried (`topic=None`) |
 | Different user | S13: `demo-user-b`, thread `isolation-b` | [S13.json](outputs/S13.json) | “No preferred language … no previous problem recorded”; no user_memory READ in sources |
 
-Limitation: the Kazakh “translation” is one canned sentence in the fake model; a real model would be asked (via the context block) to reply in the stored language, which I could not test.
+With the real model, S11 and S12 answered in Kazakh using the stored preference (sources: `user_memory: READ`). In S12, `gpt-4o-mini` answered without calling a tool.
 
 ## Part 4 — Running and checking my work
 
-See [README.md](README.md): setup, Python 3.12, pinned [requirements.txt](requirements.txt), where memory lives (`local-storage/`) and how to clear it, the table “what each test catches”, and the CI workflow [.github/workflows/tests.yml](.github/workflows/tests.yml) (runs `pytest` on every push with no key). Tests and all scenario logs use the fake model; the real-model path is separate (`--model openai`). 20 tests pass locally. GitHub Actions ran on push to https://github.com/ars512/css4007-hw5 and passed (workflow `tests`, 18 s).
+See [README.md](README.md): setup, Python 3.12, pinned [requirements.txt](requirements.txt), where memory lives (`local-storage/`) and how to clear it, the table “what each test catches”, and the CI workflow [.github/workflows/tests.yml](.github/workflows/tests.yml) (runs `pytest` on every push with no key). Tests use the fake model; the saved scenario logs come from the real model (`--model openai`). 20 tests pass locally. GitHub Actions ran on push to https://github.com/ars512/css4007-hw5 and passed (workflow `tests`, 18 s).
 
 ## Choices and limitations
 
 - **Storage:** SQLite for both stores (`langgraph-checkpoint-sqlite` as supplied; plain `sqlite3` for preferences) — zero setup, survives restarts, easy to delete.
 - **Rule-based extraction** (topic, steps, language) is deliberately simple: it ignores negations (“I did *not* restart”), supports a few step phrases, and only recognises “prefer … in X” / “reply in X”.
-- **Fake model** is not an LLM; real-LLM behaviour (conditional logic, language switching, tool choice) is unverified. Part 2 “model chose tools” is therefore demonstrated mechanically.
+- **Real model** was `gpt-4o-mini` only, one run per scenario; behaviour can vary between runs. In S09 the model chose to check the status before drafting, so the ticket records `operational` (this is real tool output, not invented). Kazakh quality was not reviewed by a native speaker.
+- The fake model is used only in tests/CI.
 - Ticket summary is a fixed sentence built from the category plus the user's extracted steps; no extra troubleshooting is invented.
-- Repository: https://github.com/ars512/css4007-hw5 (public fork). The OpenAI key supplied for the real-model run was rejected with `401 API key has expired`, so the real-model run is still missing.
+- Repository: https://github.com/ars512/css4007-hw5 (public fork). 
 
 ## Supplied scenarios — my actual results
 
-Command for all: `python -m helpdesk.run_scenarios` (fake model). Each log starts with scenario id, command, snapshot, user and thread.
+Command for all: `python -m helpdesk.run_scenarios --model openai` (model: gpt-4o-mini). Each log starts with scenario id, command, snapshot, user and thread.
 
 | Scenario | Command or manual steps | Log file | What happened / what I changed |
 | --- | --- | --- | --- |
@@ -121,4 +122,4 @@ Command for all: `python -m helpdesk.run_scenarios` (fake model). Each log start
 | S13 — Do not share memory between users | `cli chat` user a then user b | [S13](outputs/S13.json) | user b sees nothing of user a |
 | S14 — Password recovery outage | `cli chat --profile recovery_outage` | [S14](outputs/S14.json) | looked up `account_recovery`, reported outage, no repair time |
 
-**What I would change if wrong:** S04 shows the original behaviour is itself the “bug” fixed by S05. Other scenarios behaved as specified on first full run; the issues I fixed during development were Windows console encoding for Kazakh output, and machine-specific paths leaking into logs (now removed).
+**What I would change if wrong:** S04 shows the original behaviour is itself the “bug” fixed by S05. On the real model all 14 scenarios behaved as specified on the first run; the issues I fixed during development were Windows console encoding for Kazakh output, and machine-specific paths leaking into logs (now removed).

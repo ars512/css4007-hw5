@@ -8,23 +8,20 @@
   "events": [
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread isolation-a --profile normal --message \"Please remember that I prefer replies in Kazakh. I have a Wi-Fi problem.\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread isolation-a --profile normal --message \"Please remember that I prefer replies in Kazakh. I have a Wi-Fi problem.\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "isolation-a",
       "message": "Please remember that I prefer replies in Kazakh. I have a Wi-Fi problem.",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
-        "agent_model",
-        "run_tools",
         "agent_model"
       ],
       "sources": [
         "user_memory: WROTE preferred_language=Kazakh",
         "user_memory: READ preferred_language=Kazakh",
-        "conversation_state: topic=wifi steps_tried=[]",
-        "data/helpdesk.json: find_instructions"
+        "conversation_state: topic=wifi steps_tried=[]"
       ],
       "trace": [
         {
@@ -49,60 +46,20 @@
         {
           "node": "agent_model",
           "summary": {
-            "model_requests": [
-              {
-                "tool": "find_instructions",
-                "args": {
-                  "topic": "wifi"
-                }
-              }
-            ]
-          }
-        },
-        {
-          "node": "run_tools",
-          "summary": {
-            "tool_results": [
-              {
-                "tool": "find_instructions",
-                "result": {
-                  "found": true,
-                  "topic": "wifi",
-                  "instruction_id": "GUIDE-WIFI",
-                  "title": "Connect to the practice campus network",
-                  "steps": [
-                    "Check that Wi-Fi is enabled and airplane mode is off.",
-                    "Select the fictional Campus-Demo network.",
-                    "If connection fails, forget the saved network and try connecting again.",
-                    "If the problem remains, check the service status before preparing a ticket."
-                  ],
-                  "source": "data/helpdesk.json"
-                }
-              }
-            ],
-            "tool_rounds": 1,
-            "sources": [
-              "data/helpdesk.json: find_instructions"
-            ]
-          }
-        },
-        {
-          "node": "agent_model",
-          "summary": {
-            "model_answer": "Noted: I will reply in Kazakh from now on. Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket."
+            "model_answer": "Сізде Wi-Fi мәселесі бар екенін түсіндім. Сіз қандай әрекеттер жасадыңыз?"
           }
         }
       ],
-      "reply": "Noted: I will reply in Kazakh from now on. Connect to the practice campus network [GUIDE-WIFI]: 1. Check that Wi-Fi is enabled and airplane mode is off. 2. Select the fictional Campus-Demo network. 3. If connection fails, forget the saved network and try connecting again. 4. If the problem remains, check the service status before preparing a ticket.",
+      "reply": "Сізде Wi-Fi мәселесі бар екенін түсіндім. Сіз қандай әрекеттер жасадыңыз?",
       "limit_reached": false
     },
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-b --thread isolation-b --profile normal --message \"Have I told you a preferred language or a previous problem?\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-b --thread isolation-b --profile normal --message \"Have I told you a preferred language or a previous problem?\" --model openai",
       "user_id": "demo-user-b",
       "thread_id": "isolation-b",
       "message": "Have I told you a preferred language or a previous problem?",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
@@ -127,11 +84,11 @@
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "No preferred language has been recorded for you. No previous problem has been recorded for you."
+            "model_answer": "No, you haven't mentioned a preferred language or a previous problem. How can I assist you today?"
           }
         }
       ],
-      "reply": "No preferred language has been recorded for you. No previous problem has been recorded for you.",
+      "reply": "No, you haven't mentioned a preferred language or a previous problem. How can I assist you today?",
       "limit_reached": false
     }
   ]

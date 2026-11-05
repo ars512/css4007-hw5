@@ -1,0 +1,86 @@
+{
+  "scenario": "S14",
+  "title": "Password recovery outage",
+  "part": 2,
+  "status_profile": "recovery_outage",
+  "graph_variant": null,
+  "reset_before": true,
+  "events": [
+    {
+      "action": "message",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s14 --profile recovery_outage --message \"My password recovery page is unavailable. Check the service status. Is there a known problem?\" --model fake",
+      "user_id": "demo-user-a",
+      "thread_id": "s14",
+      "message": "My password recovery page is unavailable. Check the service status. Is there a known problem?",
+      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "nodes": [
+        "remember_preference",
+        "track_conversation",
+        "agent_model",
+        "run_tools",
+        "agent_model"
+      ],
+      "sources": [
+        "conversation_state: topic=password steps_tried=[]",
+        "data/service_status.json: check_service_status"
+      ],
+      "trace": [
+        {
+          "node": "remember_preference",
+          "summary": {}
+        },
+        {
+          "node": "track_conversation",
+          "summary": {
+            "topic": "password",
+            "sources": [
+              "conversation_state: topic=password steps_tried=[]"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_requests": [
+              {
+                "tool": "check_service_status",
+                "args": {
+                  "service": "account_recovery"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "node": "run_tools",
+          "summary": {
+            "tool_results": [
+              {
+                "tool": "check_service_status",
+                "result": {
+                  "service": "account_recovery",
+                  "profile": "recovery_outage",
+                  "status": "outage",
+                  "message": "The demo account-recovery service is unavailable. The fixture gives no repair time.",
+                  "source": "data/service_status.json"
+                }
+              }
+            ],
+            "tool_rounds": 1,
+            "sources": [
+              "data/service_status.json: check_service_status"
+            ]
+          }
+        },
+        {
+          "node": "agent_model",
+          "summary": {
+            "model_answer": "Yes, the demo status source reports a known account_recovery outage. The demo account-recovery service is unavailable. The fixture gives no repair time. I will not guess a repair time."
+          }
+        }
+      ],
+      "reply": "Yes, the demo status source reports a known account_recovery outage. The demo account-recovery service is unavailable. The fixture gives no repair time. I will not guess a repair time.",
+      "limit_reached": false
+    }
+  ]
+}

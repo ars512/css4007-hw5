@@ -8,11 +8,11 @@
   "events": [
     {
       "action": "message",
-      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s14 --profile recovery_outage --message \"My password recovery page is unavailable. Check the service status. Is there a known problem?\" --model fake",
+      "command": "python -m helpdesk.cli chat --user demo-user-a --thread s14 --profile recovery_outage --message \"My password recovery page is unavailable. Check the service status. Is there a known problem?\" --model openai",
       "user_id": "demo-user-a",
       "thread_id": "s14",
       "message": "My password recovery page is unavailable. Check the service status. Is there a known problem?",
-      "model": "FakeHelpdeskModel (deterministic rule-based stand-in, not an LLM)",
+      "model": "OpenAI chat model gpt-4o-mini",
       "nodes": [
         "remember_preference",
         "track_conversation",
@@ -75,11 +75,11 @@
         {
           "node": "agent_model",
           "summary": {
-            "model_answer": "Yes, the demo status source reports a known account_recovery outage. The demo account-recovery service is unavailable. The fixture gives no repair time. I will not guess a repair time."
+            "model_answer": "The password recovery service is currently experiencing an outage and is unavailable. Unfortunately, there is no information on when it will be repaired. If you need further assistance, feel free to ask!"
           }
         }
       ],
-      "reply": "Yes, the demo status source reports a known account_recovery outage. The demo account-recovery service is unavailable. The fixture gives no repair time. I will not guess a repair time.",
+      "reply": "The password recovery service is currently experiencing an outage and is unavailable. Unfortunately, there is no information on when it will be repaired. If you need further assistance, feel free to ask!",
       "limit_reached": false
     }
   ]
