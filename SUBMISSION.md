@@ -90,7 +90,7 @@ Limitation: the Kazakh “translation” is one canned sentence in the fake mode
 
 ## Part 4 — Running and checking my work
 
-See [README.md](README.md): setup, Python 3.12, pinned [requirements.txt](requirements.txt), where memory lives (`local-storage/`) and how to clear it, the table “what each test catches”, and the CI workflow [.github/workflows/tests.yml](.github/workflows/tests.yml) (runs `pytest` on every push with no key). Tests and all scenario logs use the fake model; the real-model path is separate (`--model openai`). 20 tests pass locally. **CI has not been observed running** because I did not push (see below).
+See [README.md](README.md): setup, Python 3.12, pinned [requirements.txt](requirements.txt), where memory lives (`local-storage/`) and how to clear it, the table “what each test catches”, and the CI workflow [.github/workflows/tests.yml](.github/workflows/tests.yml) (runs `pytest` on every push with no key). Tests and all scenario logs use the fake model; the real-model path is separate (`--model openai`). 20 tests pass locally. GitHub Actions ran on push to https://github.com/ars512/css4007-hw5 and passed (workflow `tests`, 18 s).
 
 ## Choices and limitations
 
@@ -98,7 +98,7 @@ See [README.md](README.md): setup, Python 3.12, pinned [requirements.txt](requir
 - **Rule-based extraction** (topic, steps, language) is deliberately simple: it ignores negations (“I did *not* restart”), supports a few step phrases, and only recognises “prefer … in X” / “reply in X”.
 - **Fake model** is not an LLM; real-LLM behaviour (conditional logic, language switching, tool choice) is unverified. Part 2 “model chose tools” is therefore demonstrated mechanically.
 - Ticket summary is a fixed sentence built from the category plus the user's extracted steps; no extra troubleshooting is invented.
-- Not pushed to GitHub: commits are local; the starter remote is not mine, so a fork has to be created and pushed by the owner.
+- Repository: https://github.com/ars512/css4007-hw5 (public fork). The OpenAI key supplied for the real-model run was rejected with `401 API key has expired`, so the real-model run is still missing.
 
 ## Supplied scenarios — my actual results
 
