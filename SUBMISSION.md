@@ -53,8 +53,20 @@ Model requests tool → `run_tools` executes it → `ToolMessage` appended → m
 
 Tools ([helpdesk/tools.py](helpdesk/tools.py)) are plain functions, each tested directly in `tests/test_tools.py`: `find_instructions(topic)`, `check_service_status(service, profile)`, `prepare_ticket(problem, steps_tried, …)` (refuses when problem or steps are missing; writes a local JSON using `ticket_template.json`; ticket id `TKT-<uuid>`).
 
-**Direct calls (no agent, no model)** — actual output of `python` calling the functions (also tested in `tests/test_tools.py`):
+**Direct calls (no agent, no model)** — actual output of calling the functions in Python (also tested in `tests/test_tools.py`):
 
+```text
+>>> tools.find_instructions('wifi')
+{"found": true, "topic": "wifi", "instruction_id": "GUIDE-WIFI", "title": "Connect to the practice campus network", "steps": ["Check that Wi-Fi is enabled and airplane mode is off.", "Select the fictional Campus-Demo network.", "If connection fails, forget the saved network and try connecting again.
+>>> tools.check_service_status('wifi', 'wifi_outage')
+{"service": "wifi", "profile": "wifi_outage", "status": "outage", "message": "The demo Wi-Fi service is unavailable across campus. The fixture gives no repair time.", "source": "data/service_status.json"}
+>>> tools.check_service_status('wifi', 'status_unavailable')
+{"service": "wifi", "profile": "status_unavailable", "status": "unknown", "message": "The demo Wi-Fi status source is unavailable.", "source": "data/service_status.json"}
+>>> tools.prepare_ticket('Wi-Fi fails', ['enabled Wi-Fi'], category='wifi', user_id='demo-user-a', thread_id='direct', status_profile='normal')
+{"ok": true, "ticket_id": "TKT-5731b024", "file": "TKT-5731b024.json", "sent": false, "message": "Local draft saved. Nothing was sent to a real helpdesk."}
+>>> tools.prepare_ticket('', [])
+{"ok": false, "missing": ["problem description", "steps already tried"], "message": "Ask the user for: problem description, steps already tried. Do not invent them."}
+```
 
 **Loop limit.** `tool_rounds` is reset to 0 each turn and incremented by `run_tools`. The limit (`MAX_TOOL_ROUNDS = 4`) is enforced on the conditional edge `route_after_model`: with pending tool calls and `tool_rounds ≥ 4` it routes to `limit_reached` instead of `run_tools`, which answers `I stopped because I reached the limit…` and sets `limit_reached`. Tested with a model that never stops asking for tools.
 
